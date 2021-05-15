@@ -1,6 +1,7 @@
 package uea.ac.uk.shake2021;
 //Load Associated Libraries
 import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.os.Bundle;
 
 import android.app.Activity;
@@ -56,7 +57,12 @@ public class MainActivity extends Activity implements SensorEventListener{
     private TextView mOrientation1TextView;
     private TextView mOrientation2TextView;
     private TextView mOrientation3TextView;
-
+    private View aziL;
+    private View aziC;
+    private View aziR;
+    private View altT;
+    private View altC;
+    private View altB;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -82,6 +88,19 @@ public class MainActivity extends Activity implements SensorEventListener{
         Azimuth = findViewById(R.id.Azimuth);
         //mThresholdEditText = findViewById(R.id.editTextNumberDecimal);
         lastUpdate = System.currentTimeMillis();
+        aziL = findViewById(R.id.AziL);
+        aziC = findViewById(R.id.aziC);
+        aziR = findViewById(R.id.aziR);
+        altT = findViewById(R.id.altT);
+        altC = findViewById(R.id.altC);
+        altB = findViewById(R.id.altB);
+
+        aziL.setBackgroundColor(Color.RED);
+        aziC.setBackgroundColor(Color.RED);
+        aziR.setBackgroundColor(Color.RED);
+        altT.setBackgroundColor(Color.RED);
+        altC.setBackgroundColor(Color.RED);
+        altB.setBackgroundColor(Color.RED);
 
         RAsecs = 0;
         DECsecs = 0;
@@ -163,7 +182,7 @@ public class MainActivity extends Activity implements SensorEventListener{
         if (DECsecs !=0 && Latitude.compareTo("") !=0 && LHA != 0) {
             dummyAlt = (float) (Math.sin(Float.parseFloat(Latitude)*degreeCONV) * Math.sin(DECsecs*degreeCONV) + Math.cos(Float.parseFloat(Latitude)*degreeCONV) * Math.cos(DECsecs*degreeCONV) * Math.cos(LHA*degreeCONV));
             Altitude.setText(Float.toString((float) ((Math.asin(dummyAlt)/degreeCONV))));
-            //
+            guidancealt(((float) ((Math.asin(dummyAlt)/degreeCONV))), event);
         }
 
         if (dummyAlt != 0) {
@@ -171,8 +190,120 @@ public class MainActivity extends Activity implements SensorEventListener{
             dummyAZBOT = (float) (Math.cos(Float.parseFloat(Latitude)*degreeCONV)* Math.cos((Math.asin(dummyAlt)/degreeCONV)*degreeCONV));
             dummyAZTOT = dummyAZTOP/dummyAZBOT;
             Azimuth.setText(Float.toString((float) (Math.acos(dummyAZTOT)/degreeCONV)));
+            guidanceazi(((float) (Math.acos(dummyAZTOT)/degreeCONV)), event);
         }
+
     }
+
+    private void guidancealt(float valueGuidedTo, SensorEvent event) {
+
+        float[] values = event.values;
+        float o1 = values[0];
+        float o2 = values[1] * -1;
+        float o3 = values[2];
+
+        if (valueGuidedTo-30 <= o2 && o2 < valueGuidedTo-10) {
+            altT.setBackgroundColor(Color.GREEN);
+            // I dont know how to do coloured squares :(
+        } else {
+            altT.setBackgroundColor(Color.RED);
+            System.out.println(valueGuidedTo);
+        }
+
+            //fringe case for if its near 0
+            // if (valueGuidedTo+360-30 <= o2 && o2 < valueGuidedTo+360-10) {
+            // altT.setBackgroundColor(Color.GREEN);
+            // I dont know how to do coloured squares :(
+            // } else {
+            //altT.setBackgroundColor(Color.RED);
+            //}
+
+        if (valueGuidedTo-10 <= o2 && o2 <= valueGuidedTo+10) {
+            altC.setBackgroundColor(Color.GREEN);
+        } else {
+            altC.setBackgroundColor(Color.RED);
+        }
+
+            // fringe case for middle where could be 0 or 360
+            //if (valueGuidedTo+360-10 <= o2 && o2 <= valueGuidedTo-360+10) {
+            // altC.setBackgroundColor(Color.GREEN);
+            //} else {
+            //  altC.setBackgroundColor(Color.RED);
+            //}
+
+        if (valueGuidedTo+10 < o2 && o2 <= valueGuidedTo+30) {
+            altB.setBackgroundColor(Color.GREEN);
+        } else {
+            altB.setBackgroundColor(Color.RED);
+        }
+
+            //fringe case for when x is 360
+            //if (valueGuidedTo-360+10 < o2 && o2 <= valueGuidedTo-360+30) {
+            //  altB.setBackgroundColor(Color.GREEN);
+            //} else {
+            //  altB.setBackgroundColor(Color.GREEN);
+            //}
+        }
+
+
+    private void guidanceazi(float valueGuidedTo, SensorEvent event){
+        //my idea is to have three coloured blocks, [     ] [ ] [     ], for both values
+        // intially all would start at red and the block "you are currently in" would be green
+        // say x is the value you want to turn to the middle block would be green when your current position (p) are x-10 <= p <= x+10
+        // for the outer two it would be LEFT: x-30 <= p < x-10 and RIGHT: x+10 < p <= x+30
+        //
+        //This may have to be split into two methods im not sure
+        //difference between when guiding for azimuth and alititude will be if our current position is the value of the first element in the orientation sensor output array or the second one
+        // the first is for azimuth the second for alitude
+        //ill use p for current posistion
+        float[] values = event.values;
+        float o1 = values[0];
+        float o2 = values[1] * -1;
+        float o3 = values[2];
+
+            //so here p = orientationSensor.array[0]
+        if (valueGuidedTo-30 <= o1 &&  o1 < valueGuidedTo-10) {
+            aziL.setBackgroundColor(Color.GREEN);
+            // I dont know how to do coloured squares :(
+        } else {
+            aziL.setBackgroundColor(Color.RED);
+        }
+
+            //fringe case for if its near 0
+            //if (valueGuidedTo+360-30 <= o1 && o1< valueGuidedTo+360-10) {
+                //aziL.setBackgroundColor(Color.GREEN);
+                // I dont know how to do coloured squares :(
+           //} else {
+              //  aziL.setBackgroundColor(Color.RED);
+           //}
+
+        if (valueGuidedTo-10 <= o1 && o1 <= valueGuidedTo+10) {
+            aziC.setBackgroundColor(Color.GREEN);
+        } else {
+            aziC.setBackgroundColor(Color.RED);
+        }
+
+            // fringe case for middle where could be 0 or 360
+            //if (valueGuidedTo+360-10 <= o1 && o1 <= valueGuidedTo-360+10) {
+             //   aziC.setBackgroundColor(Color.GREEN);
+            //} else {
+              //  aziC.setBackgroundColor(Color.GREEN);
+            //}
+
+        if (valueGuidedTo+10 < o1 && o1<= valueGuidedTo+30) {
+            aziR.setBackgroundColor(Color.GREEN);
+        } else {
+            aziR.setBackgroundColor(Color.RED);
+        }
+
+            //fringe case for when x is 360
+            //if (valueGuidedTo-360+10 < o1 && o1 <= valueGuidedTo-360+30) {
+              //  aziR.setBackgroundColor(Color.GREEN);
+            //} else {
+               // aziR.setBackgroundColor(Color.GREEN);
+            //}
+        }
+
 
     @Override
     protected void onResume() {
